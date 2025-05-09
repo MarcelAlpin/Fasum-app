@@ -1,10 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+// import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:http/http.dart' as http;
 
 // import 'package:firebase_auth/firebase_auth.dart'
 class AddPostScreen extends StatefulWidget {
@@ -35,7 +39,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           _descriptionController.clear();
         });
         await _compressAndEncodeImage();
-        // await _generateDescriptionWithAI();
+        await _generateDescriptionWithAI();
       }
     } catch (e) {
       if (mounted) {
@@ -63,6 +67,235 @@ class _AddPostScreenState extends State<AddPostScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to compress image:$e')));
       }
+    }
+  }
+
+  Future<void> _generateDescriptionWithAI() async {
+    if (_image == null) return;
+    setState(() => _isGenerating = true);
+    try {
+      final imageBytes = await _image!.readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+      const apiKey =
+          'AIzaSyAXufE1OQFS9qxn1Oh2gVcNPYaqEGRq2FM'; // ganti dengan API key kamu
+      const url =
+          'https://generativelanguage.googleapis.com/v1/models/gemini2.0-flash:generateContent?key=$apiKey';
+      final body = jsonEncode({
+        "contents": [
+          {
+            "parts": [
+              {
+                "inlineData": {"mimeType": "image/jpeg", "data": base64Image},
+              },
+              {
+                "text":
+                    "Berdasarkan foto ini, identifikasi satu kategori utama kerusakan fasilitas umum "
+                    "dari daftar berikut: Jalan Rusak, Marka Pudar, Lampu Mati, Trotoar Rusak, "
+                    "Rambu Rusak, Jembatan Rusak, Sampah Menumpuk, Saluran Tersumbat, Sungai Tercemar, "
+                    "Sampah Sungai, Pohon Tumbang, Taman Rusak, Fasilitas Rusak, Pipa Bocor, "
+                    "Vandalisme, Banjir, dan Lainnya. "
+                    "Pilih kategori yang paling dominan atau paling mendesak untuk dilaporkan. "
+                    "Buat deskripsi singkat untuk laporan perbaikan, dan tambahkan permohonan perbaikan. "
+                    "Fokus pada kerusakan yang terlihat dan hindari spekulasi.\n\n"
+                    "Format output yang diinginkan:\n"
+                    "Kategori: [satu kategori yang dipilih]\n"
+                    "Deskripsi: [deskripsi singkat]",
+              },
+            ],
+          },
+        ],
+      });
+      final headers = {'Content-Type': 'application/json'};
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: body,
+      );
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final text =
+            jsonResponse['candidates'][0]['content']['parts'][0]['text'];
+        print("AI TEXT: $text");
+        if (text != null && text.isNotEmpty) {
+          final lines = text.trim().split('\n');
+          String? category;
+          String? description;
+          for (var line in lines) {
+            final lower = line.toLowerCase();
+            if (lower.startsWith('Kategori:')) {
+              category = line.substring(9).trim();
+            } else if (lower.startsWith('Deskripsi:')) {
+              description = line.substring(10).trim();
+            }
+          }
+          description ??= text.trim();
+          setState(() {
+            _aiCategory = category ?? 'Tidak diketahui';
+            _aiDescription = description!;
+            _descriptionController.text = _aiDescription!;
+          });
+        }
+      } else {
+        debugPrint('Request failed: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Failed to generate AI description: $e');
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+
+    if (_image == null) return;
+    setState(() => _isGenerating = true);
+    try {
+      final imageBytes = await _image!.readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+      const apiKey =
+          'AIzaSyBaPQiJJcTsHfTgpyN83b3phWVCkZMDkD4'; // ganti dengan API key kamu
+      const url =
+          'https://generativelanguage.googleapis.com/v1/models/gemini2.0-flash:generateContent?key=$apiKey';
+      final body = jsonEncode({
+        "contents": [
+          {
+            "parts": [
+              {
+                "inlineData": {"mimeType": "image/jpeg", "data": base64Image},
+              },
+              {
+                "text":
+                    "Berdasarkan foto ini, identifikasi satu kategori utama kerusakan fasilitas umum "
+                    "dari daftar berikut: Jalan Rusak, Marka Pudar, Lampu Mati, Trotoar Rusak, "
+                    "Rambu Rusak, Jembatan Rusak, Sampah Menumpuk, Saluran Tersumbat, Sungai Tercemar, "
+                    "Sampah Sungai, Pohon Tumbang, Taman Rusak, Fasilitas Rusak, Pipa Bocor, "
+                    "Vandalisme, Banjir, dan Lainnya. "
+                    "Pilih kategori yang paling dominan atau paling mendesak untuk dilaporkan. "
+                    "Buat deskripsi singkat untuk laporan perbaikan, dan tambahkan permohonan perbaikan. "
+                    "Fokus pada kerusakan yang terlihat dan hindari spekulasi.\n\n"
+                    "Format output yang diinginkan:\n"
+                    "Kategori: [satu kategori yang dipilih]\n"
+                    "Deskripsi: [deskripsi singkat]",
+              },
+            ],
+          },
+        ],
+      });
+      final headers = {'Content-Type': 'application/json'};
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: body,
+      );
+      if (response.statusCode == 200) {
+        final jsonResponse = jsonDecode(response.body);
+        final text =
+            jsonResponse['candidates'][0]['content']['parts'][0]['text'];
+        print("AI TEXT: $text");
+        if (text != null && text.isNotEmpty) {
+          final lines = text.trim().split('\n');
+          String? category;
+          String? description;
+          for (var line in lines) {
+            final lower = line.toLowerCase();
+            if (lower.startsWith('kategori:')) {
+              category = line.substring(9).trim();
+            } else if (lower.startsWith('deskripsi:')) {
+              description = line.substring(10).trim();
+            } else if (lower.startsWith('keterangan:')) {
+              description = line.substring(11).trim();
+            }
+          }
+          description ??= text.trim();
+          setState(() {
+            _aiCategory = category ?? 'Tidak diketahui';
+            _aiDescription = description!;
+            _descriptionController.text = _aiDescription!;
+          });
+        }
+      } else {
+        debugPrint('Request failed: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Failed to generate AI description: $e');
+    } finally {
+      if (mounted) setState(() => _isGenerating = false);
+    }
+  }
+
+  Future<void> _getLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location services are disabled.')),
+        );
+        return;
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.deniedForever ||
+            permission == LocationPermission.denied) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Location permissions are denied.')),
+          );
+          return;
+        }
+      }
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      ).timeout(const Duration(seconds: 10));
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+      });
+    } catch (e) {
+      debugPrint('Failed to retrieve location: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to retrieve location: $e')),
+      );
+      setState(() {
+        _latitude = null;
+        _longitude = null;
+      });
+    }
+  }
+
+  Future<void> _submitPost() async {
+    if (_base64Image == null || _descriptionController.text.isEmpty) return;
+    setState(() => _isUploading = true);
+    final now = DateTime.now().toIso8601String();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Pengguna Tidak Ditemukan')));
+      return;
+    }
+    try {
+      await _getLocation();
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final fullName = userDoc.data()?['fullName'] ?? 'Tanpa Nama';
+      await FirebaseFirestore.instance.collection('posts').add({
+        'image': _base64Image,
+        'description': _descriptionController.text,
+        'createdAt': now,
+        'latitude': _latitude,
+        'longitude': _longitude,
+        'fullName': fullName,
+        'userId': uid,
+      });
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      debugPrint('Upload Failed : $e');
+      if (!mounted) return;
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal Mengunggah Postingan')));
     }
   }
 
@@ -98,6 +331,21 @@ class _AddPostScreenState extends State<AddPostScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildShimmerEffect() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        height: 150,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[400]!),
+        ),
+      ),
     );
   }
 
@@ -138,17 +386,25 @@ class _AddPostScreenState extends State<AddPostScreen> {
               ),
             ),
             SizedBox(height: 24),
-            TextField(
-              controller: _descriptionController,
-              textCapitalization: TextCapitalization.sentences,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                hintText: 'Add a brief description...',
-                border: OutlineInputBorder(),
-              ),
-            ),
+            _isGenerating
+                ? _buildShimmerEffect()
+                : TextField(
+                  controller: _descriptionController,
+                  textCapitalization: TextCapitalization.sentences,
+                  maxLines: 6,
+                  decoration: const InputDecoration(
+                    hintText: 'Add a brief description...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
             SizedBox(height: 24),
-            ElevatedButton(onPressed: () {}, child: Text('Post')),
+            _isUploading
+                ? const Center(child: CircularProgressIndicator())
+                : ElevatedButton.icon(
+                  onPressed: _submitPost,
+                  icon: Icon(Icons.upload),
+                  label: Text('Posting'),
+                ),
           ],
         ),
       ),
