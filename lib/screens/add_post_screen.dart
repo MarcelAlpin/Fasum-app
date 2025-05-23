@@ -51,6 +51,35 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
   }
 
+  Future<void> sendNotificationToTopic(String body, String senderName) async {
+    final url = Uri.parse('https://fasum-cloud-steel.vercel.app/send-to-topic');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "topic": "berita-fasum",
+        "title": "🔔 Laporan Baru",
+        "body": body,
+        "senderName": senderName,
+        "senderPhotoUrl": "-",
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('✅ Notifikasi berhasil dikirim')),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Gagal kirim notifikasi: ${response.body}')),
+        );
+      }
+    }
+  }
+
   Future<void> _compressAndEncodeImage() async {
     if (_image == null) return;
     try {
@@ -215,6 +244,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
         'userId': uid,
       });
       if (!mounted) return;
+      sendNotificationToTopic(_descriptionController.text, fullName);
       Navigator.pop(context);
     } catch (e) {
       debugPrint('Upload Failed : $e');
