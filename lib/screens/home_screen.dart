@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fasum/l10n/app_localizations.dart';
 import 'package:fasum/screens/detail_screen.dart';
+import 'package:fasum/screens/settings_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fasum/screens/sign_in_screen.dart';
 import 'package:fasum/screens/add_post_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,37 +20,38 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String? selectedcategory;
-  List<String> categories = [
-    'Jalan Rusak',
-    'Marka Pudar',
-    'Lampu Mati',
-    'Trotoar Rusak',
-    'Rambu Rusak',
-    'Jembatan Rusak',
-    'Sampah Menumpuk',
-    'Saluran Tersumbat',
-    'Sungai Tercemar',
-    'Sampah Sungai',
-    'Pohon Tumbang',
-    'Taman Rusak',
-    'Fasilitas Rusak',
-    'Pipa Bocor',
-    'Vandalisme',
-    'Banjir',
-    'Lainnya',
+
+  List<String> get categories => [
+    AppLocalizations.of(context).categoryJalanRusak,
+    AppLocalizations.of(context).categoryMarkaPudar,
+    AppLocalizations.of(context).categoryLampuMati,
+    AppLocalizations.of(context).categoryTrotoarRusak,
+    AppLocalizations.of(context).categoryRambuRusak,
+    AppLocalizations.of(context).categoryJembatanRusak,
+    AppLocalizations.of(context).categorySampahMenumpuk,
+    AppLocalizations.of(context).categoryPohonTumbang,
+    AppLocalizations.of(context).categorySaluranTersumbat,
+    AppLocalizations.of(context).categorySungaiTercemar,
+    AppLocalizations.of(context).categorySampahSungai,
+    AppLocalizations.of(context).categoryTamanRusak,
+    AppLocalizations.of(context).categoryFasilitasRusak,
+    AppLocalizations.of(context).categoryPipaBocor,
+    AppLocalizations.of(context).categoryVandalisme,
+    AppLocalizations.of(context).categoryBanjir,
+    AppLocalizations.of(context).categoryLainnya,
   ];
 
   String formatTime(DateTime dateTime) {
     final now = DateTime.now();
     final diff = now.difference(dateTime);
     if (diff.inSeconds < 60) {
-      return '${diff.inSeconds} Secs ago';
+      return AppLocalizations.of(context).secondsAgo(diff.inSeconds);
     } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} Mins ago';
-    } else if (diff.inHours < 24) {
-      return '${diff.inHours} Hrs ago';
+      return AppLocalizations.of(context).minutesAgo(diff.inMinutes);
     } else if (diff.inHours < 48) {
-      return '1 Day ago';
+      return AppLocalizations.of(context).hoursAgo(diff.inHours);
+    } else if (diff.inDays < 2) {
+      return AppLocalizations.of(context).oneDayAgo;
     } else {
       return DateFormat('dd/MM/yyyy').format(dateTime);
     }
@@ -127,6 +131,16 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: _showcategoryFilter,
             icon: Icon(Icons.filter_list),
             tooltip: "Filter Kategori",
+          ),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
+            icon: const Icon(Icons.settings),
+            tooltip: AppLocalizations.of(context).settings,
           ),
           IconButton(onPressed: signOut, icon: const Icon(Icons.logout)),
         ],

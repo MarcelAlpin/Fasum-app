@@ -1,3 +1,4 @@
+import 'package:fasum/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fasum/screens/home_screen.dart';
@@ -21,7 +22,7 @@ class SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).signUp)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -42,7 +43,7 @@ class SignUpScreenState extends State<SignUpScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your full name';
+                        return AppLocalizations.of(context).pleaseEnterFullName;
                       }
                       return null;
                     },
